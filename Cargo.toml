@@ -1,0 +1,22 @@
+[package]
+name = "quicktest"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# Enable a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
+
+[dependencies]
+bevy = "0.12.1"
+bevy-fps-counter = "0.3.0"
+bevy_prototype_lyon = "0.10.0"
+bevy_svg = "0.12.0"
+cubic_spline = "1.0.0"
+roxmltree = "0.19.0"
