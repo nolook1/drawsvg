@@ -12,6 +12,11 @@ while drawing the path drawn will be a white line, once the left mouse button is
 the SVG is drawn on the screen as a black line so you can see when it changes, and the 
 SVG is saved into the main folder then into assets/svg/
 
+Controls - V-SYNC toggle - V
+           World Movement - WASD
+           Draw SVG - Left mouse button
+           FPS counter toggle - F12
+
 Known bugs/ Issues - When drawing sometimes if you release the left mouse button the 
 SVG will not save & display the SVG properly, it will stay in the drawing mode until 
 clicking the left mouse button somewhere on the screen again, not sure why this is, 
