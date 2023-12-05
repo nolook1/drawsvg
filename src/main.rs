@@ -1,9 +1,12 @@
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
-use bevy_fps_counter::FpsCounterPlugin;
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 
 mod draw;
 use draw::{drawing, draw_lines, draw_setup};
+
+mod fps_counter;
+use fps_counter::{fps_setup, fps_counter_display, fps_text_update};
 
 fn main() {
     App::new()
@@ -17,10 +20,10 @@ fn main() {
         }))
         .add_plugins(bevy_svg::prelude::SvgPlugin)
         .add_plugins(ShapePlugin)
-        .add_plugins(FpsCounterPlugin)
-        .add_systems(Startup, draw_setup)
-        .add_systems(Startup, setup)
-        .add_systems(FixedUpdate, (drawing, draw_lines, camera_movement_system),)
+        .add_plugins(FrameTimeDiagnosticsPlugin::default())
+        .add_systems(Startup, (draw_setup, main_setup, fps_setup))
+        .add_systems(Update, (fps_text_update, fps_counter_display))
+        .add_systems(FixedUpdate, (drawing, draw_lines, camera_movement_system))
         .run();
 }
 
@@ -29,7 +32,7 @@ pub struct DrawingConfig {
     translation_speed: f32,
 }
 
-fn setup(mut commands: Commands) {
+fn main_setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
     commands.insert_resource(DrawingConfig { 
         translation_speed: 250.0,
