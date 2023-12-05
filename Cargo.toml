@@ -15,8 +15,5 @@ opt-level = 3
 
 [dependencies]
 bevy = "0.12.1"
-bevy-fps-counter = "0.3.0"
 bevy_prototype_lyon = "0.10.0"
 bevy_svg = "0.12.0"
-cubic_spline = "1.0.0"
-roxmltree = "0.19.0"
