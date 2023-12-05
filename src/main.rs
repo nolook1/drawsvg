@@ -1,6 +1,5 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, diagnostic::FrameTimeDiagnosticsPlugin, window::PresentMode};
 use bevy_prototype_lyon::prelude::*;
-use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 
 mod draw;
 use draw::{drawing, draw_lines, draw_setup};
@@ -14,6 +13,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "SVGdraw".to_string(),
+                present_mode: PresentMode::AutoVsync,
                 ..Default::default()
             }),
             ..Default::default()
@@ -22,7 +22,7 @@ fn main() {
         .add_plugins(ShapePlugin)
         .add_plugins(FrameTimeDiagnosticsPlugin::default())
         .add_systems(Startup, (draw_setup, main_setup, fps_setup))
-        .add_systems(Update, (fps_text_update, fps_counter_display))
+        .add_systems(Update, (fps_text_update, fps_counter_display, toggle_vsync))
         .add_systems(FixedUpdate, (drawing, draw_lines, camera_movement_system))
         .run();
 }
@@ -37,6 +37,19 @@ fn main_setup(mut commands: Commands) {
     commands.insert_resource(DrawingConfig { 
         translation_speed: 250.0,
     });
+}
+
+fn toggle_vsync(input: Res<Input<KeyCode>>, mut windows: Query<&mut Window>) {
+    if input.just_pressed(KeyCode::V) {
+        let mut window = windows.single_mut();
+
+        window.present_mode = if matches!(window.present_mode, PresentMode::AutoVsync) {
+            PresentMode::AutoNoVsync
+        } else {
+            PresentMode::AutoVsync
+        };
+        info!("PRESENT_MODE: {:?}", window.present_mode);
+    }
 }
 
 fn camera_movement_system(
