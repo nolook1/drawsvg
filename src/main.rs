@@ -1,11 +1,12 @@
-use bevy::{prelude::*, diagnostic::FrameTimeDiagnosticsPlugin, window::PresentMode};
+use bevy::{prelude::*, window::PresentMode};
 use bevy_prototype_lyon::prelude::*;
 
 mod draw;
 use draw::{drawing, draw_lines, draw_setup};
 
 mod fps_counter;
-use fps_counter::{fps_setup, fps_counter_display, fps_text_update};
+use crate::fps_counter::FpsCounterPlugin;
+use fps_counter::fps_setup;
 
 fn main() {
     App::new()
@@ -18,11 +19,9 @@ fn main() {
             }),
             ..Default::default()
         }))
-        .add_plugins(bevy_svg::prelude::SvgPlugin)
-        .add_plugins(ShapePlugin)
-        .add_plugins(FrameTimeDiagnosticsPlugin::default())
+        .add_plugins((bevy_svg::prelude::SvgPlugin, ShapePlugin, FpsCounterPlugin))
         .add_systems(Startup, (draw_setup, main_setup, fps_setup))
-        .add_systems(Update, (fps_text_update, fps_counter_display, toggle_vsync))
+        .add_systems(Update, toggle_vsync)
         .add_systems(FixedUpdate, (drawing, draw_lines, camera_movement_system))
         .run();
 }
