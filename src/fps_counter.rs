@@ -5,6 +5,16 @@ use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 // Huge thank you to the @inodentry on github for this FPS counter code
 // Which can be found at the Unoficcial Bevy Cheat book, https://bevy-cheatbook.github.io/
 
+pub(super) struct FpsCounterPlugin;
+
+impl Plugin for FpsCounterPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(FrameTimeDiagnosticsPlugin::default())
+            .add_systems(Startup, fps_setup)
+            .add_systems(Update, (fps_text_update, fps_counter_display));
+    }
+}
+
 #[derive(Component)]
 pub struct FpsRoot;
 
