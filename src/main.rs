@@ -8,7 +8,7 @@ mod fps_counter;
 use crate::fps_counter::FpsCounterPlugin;
 
 mod settings;
-use crate::fps_counter::SettingsPlugin;
+use crate::settings::SettingsPlugin;
 
 fn main() {
     App::new()
@@ -21,7 +21,7 @@ fn main() {
             ..Default::default()
         }))
         .add_plugins((bevy_svg::prelude::SvgPlugin, ShapePlugin, FpsCounterPlugin, SettingsPlugin))
-        .add_systems(Startup, (draw_setup, main_setup, fps_setup))
+        .add_systems(Startup, (draw_setup, main_setup))
         .add_systems(FixedUpdate, (drawing, draw_lines))
         .run();
 }
