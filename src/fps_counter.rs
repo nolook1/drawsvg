@@ -1,116 +1,93 @@
-use bevy::prelude::*;
-use bevy::diagnostic::DiagnosticsStore;
-use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
+use bevy::{
+    diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin},
+    prelude::*,
+};
+use std::time::Duration;
 
-// Huge thank you to the @inodentry on github for this FPS counter code
-// Which can be found at the Unoficcial Bevy Cheat book, https://bevy-cheatbook.github.io/
+//Huge thank you to @Adamekka for this FPS counter plugin, check his repo out at https://github.com/Adamekka/bevy-fps-counter/tree/85e41cd306c2dbcc9d2c9110cd35253538d10fe6
 
-pub(super) struct FpsCounterPlugin;
+pub struct FpsPlugin;
 
-impl Plugin for FpsCounterPlugin {
+impl Plugin for FpsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(FrameTimeDiagnosticsPlugin::default())
-            .add_systems(Startup, fps_setup)
-            .add_systems(Update, (fps_text_update, fps_counter_display));
+            .add_systems(Startup, spawn_text)
+            .add_systems(Update, update)
+            .init_resource::<FpsCounter>();
     }
 }
 
-#[derive(Component)]
-pub struct FpsRoot;
-
-#[derive(Component)]
-pub struct FpsText;
-
-pub fn fps_setup(
-    mut commands: Commands,
-) {
-    let root = commands.spawn((
-        FpsRoot,
-        NodeBundle {
-            background_color: BackgroundColor(Color::BLACK.with_a(0.5)),
-            z_index: ZIndex::Global(i32::MAX),
-            style: Style {
-                position_type: PositionType::Absolute,
-                right: Val::Percent(1.),
-                top: Val::Percent(1.),
-                bottom: Val::Auto,
-                left: Val::Auto,
-                padding: UiRect::all(Val::Px(4.0)),
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-    )).id();
-    let text_fps = commands.spawn((
-        FpsText,
-        TextBundle {
-            text: Text::from_sections([
-                TextSection {
-                    value: "FPS: ".into(),
-                    style: TextStyle {
-                        font_size: 16.0,
-                        color: Color::WHITE,
-                        ..default()
-                    }
-                },
-                TextSection {
-                    value: " N/A".into(),
-                    style: TextStyle {
-                        font_size: 16.0,
-                        color: Color::WHITE,
-                        ..default()
-                    }
-                },
-            ]),
-            ..Default::default()
-        },
-    )).id();
-    commands.entity(root).push_children(&[text_fps]);
+#[derive(Resource)]
+pub struct FpsCounter {
+    pub timer: Timer,
+    pub update_now: bool,
 }
 
-pub fn fps_text_update(
-    diagnostics: Res<DiagnosticsStore>,
-    mut query: Query<&mut Text, With<FpsText>>,
-) {
-    for mut text in &mut query {
-        if let Some(value) = diagnostics
-            .get(FrameTimeDiagnosticsPlugin::FPS)
-            .and_then(|fps| fps.smoothed())
-        {
-            text.sections[1].value = format!("{value:>4.0}");
-
-            text.sections[1].style.color = if value >= 120.0 {
-                Color::rgb(0.0, 1.0, 0.0)
-            } else if value >= 60.0 {
-                Color::rgb(
-                    (1.0 - (value - 60.0) / (120.0 - 60.0)) as f32,
-                    1.0,
-                    0.0,
-                )
-            } else if value >= 30.0 {
-                Color::rgb(
-                    1.0,
-                    ((value - 30.0) / (60.0 - 30.0)) as f32,
-                    0.0,
-                )
-            } else {
-                Color::rgb(1.0, 0.0, 0.0)
-            }
-        } else {
-            text.sections[1].value = " N/A".into();
-            text.sections[1].style.color = Color::WHITE;
+impl Default for FpsCounter {
+    fn default() -> Self {
+        Self {
+            timer: Timer::new(UPDATE_INTERVAL, TimerMode::Repeating),
+            update_now: true,
         }
     }
 }
-pub fn fps_counter_display(
-    mut q: Query<&mut Visibility, With<FpsRoot>>,
-    kbd: Res<Input<KeyCode>>,
+
+pub const FONT_SIZE: f32 = 32.;
+pub const FONT_COLOR: Color = Color::WHITE;
+pub const UPDATE_INTERVAL: Duration = Duration::from_secs(1);
+
+pub const STRING_FORMAT: &str = "FPS: ";
+pub const STRING_INITIAL: &str = "FPS: ...";
+pub const STRING_MISSING: &str = "FPS: ???";
+
+#[derive(Component)]
+pub struct FpsCounterText;
+
+fn update(
+    time: Res<Time>,
+    diagnostics: Res<DiagnosticsStore>,
+    state_resources: Option<ResMut<FpsCounter>>,
+    mut query: Query<Entity, With<FpsCounterText>>,
+    mut writer: TextUiWriter,
 ) {
-    if kbd.just_pressed(KeyCode::F12) {
-        let mut vis = q.single_mut();
-        *vis = match *vis {
-            Visibility::Hidden => Visibility::Visible,
-            _ => Visibility::Hidden,
-        };
+    let Some(mut state) = state_resources else {
+        return;
+    };
+    if !(state.update_now || state.timer.tick(time.delta()).just_finished()) {
+        return;
     }
+    if state.timer.paused() {
+        for entity in query.iter_mut() {
+            writer.text(entity, 0).clear();
+        }
+    } else {
+        let fps_dialog: Option<f64> = extract_fps(&diagnostics);
+
+        for entity in query.iter_mut() {
+            if let Some(fps) = fps_dialog {
+                *writer.text(entity, 0) = format!("{}{:.0}", STRING_FORMAT, fps);
+            } else {
+                *writer.text(entity, 0) = STRING_MISSING.to_string();
+            }
+        }
+    }
+}
+
+fn extract_fps(diagnostics: &Res<DiagnosticsStore>) -> Option<f64> {
+    diagnostics
+        .get(&FrameTimeDiagnosticsPlugin::FPS)
+        .and_then(|fps| fps.average())
+}
+
+fn spawn_text(mut commands: Commands) {
+    commands
+        .spawn((
+            Text::new(STRING_INITIAL),
+            TextFont {
+                font_size: FONT_SIZE,
+                ..Default::default()
+            },
+            TextColor(FONT_COLOR),
+        ))
+        .insert(FpsCounterText);
 }
