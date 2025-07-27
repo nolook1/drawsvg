@@ -38,13 +38,25 @@ pub fn draw_setup(mut commands: Commands) {
     });
 }
 
+fn mouse_press(
+    window: &mut Window,
+    cameras: &Query<(&Camera, &Transform)>,
+    drawing_info: &mut ResMut<DrawingInfo>,
+    drawing_points: &mut ResMut<DrawingPoints>,
+    config: &Res<FollowConfig>,
+) {
+    let world_pos = world_mouse_position(window, cameras);
+    let new_pos = compute_new_pos(drawing_info, world_pos, config.speed);
+    update_drawing_points(drawing_info, drawing_points, new_pos);
+}
+
 pub fn drawing(
     mut _commands: Commands,
     asset_server: Res<AssetServer>,
     mut windows: Query<&mut Window>,
     mut drawing_info: ResMut<DrawingInfo>,
     mut drawing_points: ResMut<DrawingPoints>,
-    mouse_button_input: Res<Input<MouseButton>>,
+    mouse_button_input: ResMut<'_, ButtonInput<MouseButton>>,
     cameras: Query<(&Camera, &Transform)>,
     config: Res<FollowConfig>,
 ) {
@@ -73,18 +85,6 @@ fn update_drawing_points(
     }
     drawing_points.points.push(new_pos);
     drawing_info.last_pos = Some(new_pos);
-}
-
-fn mouse_press(
-    window: &mut Window,
-    cameras: &Query<(&Camera, &Transform)>,
-    drawing_info: &mut ResMut<DrawingInfo>,
-    drawing_points: &mut ResMut<DrawingPoints>,
-    config: &Res<FollowConfig>,
-) {
-    let world_pos = world_mouse_position(window, cameras);
-    let new_pos = compute_new_pos(drawing_info, world_pos, config.speed);
-    update_drawing_points(drawing_info, drawing_points, new_pos);
 }
 
 fn world_mouse_position(
@@ -123,12 +123,12 @@ fn draw_svg(
     let filename_str = filename.strip_prefix("assets/").unwrap().to_owned();
     let svg = asset_server.load(filename_str);
     let transform = Transform::from_translation(Vec3::new(svg_pos.x, svg_pos.y, 0.0));
-    commands.spawn(Svg2dBundle {
-        svg,
-        origin: Origin::Center,
+    let origin = Origin::Center;
+    commands.spawn((
+        Svg2d(svg),
         transform,
-        ..Default::default()
-    });
+        origin,
+    ));
 }
 
 fn save_svg(
@@ -186,10 +186,12 @@ pub fn draw_lines(
     }
     for points in points.windows(2) {
         let line = shapes::Line(points[0], points[1]); 
+        let line_color = Srgba::rgb(1.0, 1.0, 1.0);
+        let line_width = 2.0;
         let entity = commands.spawn((ShapeBundle {
-            path: GeometryBuilder::build_as(&line), // Builds line
+            path: GeometryBuilder::build_as(&line),
             ..default()
-        }, Stroke::new(Color::rgb(1.0, 1.0, 1.0), 2.0))).id(); // 2.0 being width of the Stroke
+        }, Stroke::new(line_color, line_width))).id();
         drawing_points.line_entities.push(entity);
     }
 }
