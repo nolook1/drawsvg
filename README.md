@@ -12,8 +12,7 @@ while drawing the path drawn will be a white line, once the left mouse button is
 the SVG is drawn on the screen as a black line so you can see when it changes, and the 
 SVG is saved into the main folder then into assets/svg/
 
-Controls - V-SYNC toggle - V
-           World Movement - WASD
+Controls - World Movement - WASD
            Draw SVG - Left mouse button
            FPS counter toggle - F12
 
@@ -36,4 +35,6 @@ Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
+limitations under the License.
+ons and
 limitations under the License.
